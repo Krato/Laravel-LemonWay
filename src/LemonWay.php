@@ -8,43 +8,36 @@ class LemonWay
 {
     /**
      * @var string API key
-     * @access protected
      */
     protected $apiKey;
 
     /**
      * @var string API login
-     * @access protected
      */
     protected $login;
 
     /**
      * @var string API password
-     * @access protected
      */
     protected $password;
 
     /**
      * @var string API langauge
-     * @access protected
      */
     protected $language;
 
     /**
      * @var string API version
-     * @access protected
      */
     protected $version;
 
     /**
      * @var string call parameters
-     * @access protected
      */
     protected $callParameters;
 
     /**
      * @var string API version
-     * @access protected
      */
     protected $sslActive;
 
@@ -74,7 +67,7 @@ class LemonWay
     }
 
     /**
-     * Fet current client IP
+     * Fet current client IP.
      *
      * @return string
      */
@@ -88,29 +81,30 @@ class LemonWay
         } elseif (!empty($_SERVER['REMOTE_ADDR'])) {
             $ip = $_SERVER['REMOTE_ADDR'];
         } else {
-            $ip = "127.0.0.1";
+            $ip = '127.0.0.1';
         }
+
         return $ip;
     }
 
     /**
-     * Create credentials data for use in all calls
+     * Create credentials data for use in all calls.
      */
     private function createCredentialsData()
     {
         $this->callParameters = [
-            'wlLogin' => $this->login,
-            'wlPass' => $this->password,
+            'wlLogin'  => $this->login,
+            'wlPass'   => $this->password,
             'language' => $this->language,
-            'version' => $this->version,
+            'version'  => $this->version,
             'walletIp' => $this->getUserIP(),
             'walletUa' => isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'ua',
         ];
     }
 
-    public function setWalletUser($wallet, $clientMail, $clientFirstName, $clientLastName, $clientTitle = null, $street = null, $postCode = null, $city = null, $cityIso3 = null, $phoneNumber = null, $mobileNumber = null, $birthdate, $isDebtor = null, $nationalityIso3 = null, $birthCity = null, $birthCountryIso3 = null, $payerOrBeneficiary = null, $isOneTimeCustomer = null, $isTechWallet = null)
+    public function setWalletUser($wallet, $clientMail, $clientFirstName, $clientLastName, $clientTitle, $street, $postCode, $city, $cityIso3, $phoneNumber, $mobileNumber, $birthdate, $isDebtor = null, $nationalityIso3 = null, $birthCity = null, $birthCountryIso3 = null, $payerOrBeneficiary = null, $isOneTimeCustomer = null, $isTechWallet = null)
     {
-        $user = new LemonWayUser;
+        $user = new LemonWayUser();
         $user->wallet = $wallet;
         $user->clientMail = $clientMail;
         $user->clientFirstName = $clientFirstName;
@@ -140,10 +134,10 @@ class LemonWay
     }
 
     /**
-     * Call a service
+     * Call a service.
      *
-     * @param  string $serviceName
-     * @param  array $parameters
+     * @param string $serviceName
+     * @param array  $parameters
      *
      * @return string
      */
@@ -155,15 +149,15 @@ class LemonWay
         // return false;
 
         // wrap to 'p'
-        $request = json_encode(array('p' => $parameters));
-        $serviceUrl = $this->apiKey . '/' . $serviceName;
+        $request = json_encode(['p' => $parameters]);
+        $serviceUrl = $this->apiKey.'/'.$serviceName;
 
-        $headers = array("Content-type: application/json;charset=utf-8",
-            "Accept: application/json",
-            "Cache-Control: no-cache",
-            "Pragma: no-cache",
+        $headers = ['Content-type: application/json;charset=utf-8',
+            'Accept: application/json',
+            'Cache-Control: no-cache',
+            'Pragma: no-cache',
             //"Content-Length:".strlen($request)
-        );
+        ];
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $serviceUrl);
@@ -179,7 +173,7 @@ class LemonWay
 
         $network_err = curl_errno($ch);
         if ($network_err) {
-            error_log('curl_err: ' . $network_err);
+            error_log('curl_err: '.$network_err);
             throw new Exception($network_err);
         } else {
             $httpStatus = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -188,9 +182,10 @@ class LemonWay
                 $unwrapResponse = json_decode($response)->d;
                 $businessErr = $unwrapResponse->E;
                 if ($businessErr) {
-                    error_log($businessErr->Code . " - " . $businessErr->Msg . " - Technical info: " . $businessErr->Error);
-                    throw new \Exception($businessErr->Code . " - " . $businessErr->Msg);
+                    error_log($businessErr->Code.' - '.$businessErr->Msg.' - Technical info: '.$businessErr->Error);
+                    throw new \Exception($businessErr->Code.' - '.$businessErr->Msg);
                 }
+
                 return $unwrapResponse;
             } else {
                 throw new \Exception("Service return HttpStatus $httpStatus");
