@@ -3,15 +3,14 @@
 namespace Infinety\LemonWay;
 
 use Illuminate\Support\ServiceProvider;
-use Infinety\LemonWay\LemonWay;
 
 /**
- *
- * Laravel wrapper for Directus API
+ * Laravel wrapper for Directus API.
  *
  * @category   Laravel Directus
+ *
  * @version    1.0.0
- * @package    theplanworks/directus-laravel
+ *
  * @copyright  Copyright (c) 2017 thePLAN (http://www.theplanworks.com)
  * @author     Matt Fox <matt.fox@theplanworks.com>
  * @license    https://opensource.org/licenses/MIT    MIT
@@ -26,9 +25,10 @@ class LemonWayServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->publishes([
-            __DIR__ . '/config/lemonway.php' => config_path('lemonway.php'),
+            __DIR__.'/config/lemonway.php' => config_path('lemonway.php'),
         ]);
     }
+
     /**
      * Register bindings in the container.
      *
@@ -39,7 +39,7 @@ class LemonWayServiceProvider extends ServiceProvider
         // Merge config
         //
         $this->mergeConfigFrom(
-            __DIR__ . '/config/lemonway.php',
+            __DIR__.'/config/lemonway.php',
             'lemonway'
         );
 
@@ -49,6 +49,7 @@ class LemonWayServiceProvider extends ServiceProvider
             return new LemonWay();
         });
     }
+
     /**
      * Get the services provided by the provider.
      *
@@ -56,7 +57,6 @@ class LemonWayServiceProvider extends ServiceProvider
      */
     public function provides()
     {
-
         return [LemonWay::class];
     }
 }
