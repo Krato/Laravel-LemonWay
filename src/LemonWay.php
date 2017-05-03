@@ -94,17 +94,17 @@ class LemonWay
     private function createCredentialsData()
     {
         $this->callParameters = [
-            'wlLogin' => $this->login,
-            'wlPass' => $this->password,
+            'wlLogin'  => $this->login,
+            'wlPass'   => $this->password,
             'language' => $this->language,
-            'version' => $this->version,
+            'version'  => $this->version,
             'walletIp' => $this->getUserIP(),
             'walletUa' => isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'ua',
         ];
     }
 
     /**
-     * Return a LemonUser to use with api calls
+     * Return a LemonUser to use with api calls.
      *
      * @param  $wallet
      * @param  $clientMail
@@ -119,12 +119,13 @@ class LemonWay
      * @param  $mobileNumber
      * @param  $birthdate
      * @param  $isDebtor
-     * @param  null               $nationalityIso3
-     * @param  null               $birthCity
-     * @param  null               $birthCountryIso3
-     * @param  null               $payerOrBeneficiary
-     * @param  null               $isOneTimeCustomer
-     * @param  null               $isTechWallet
+     * @param null $nationalityIso3
+     * @param null $birthCity
+     * @param null $birthCountryIso3
+     * @param null $payerOrBeneficiary
+     * @param null $isOneTimeCustomer
+     * @param null $isTechWallet
+     *
      * @return mixed
      */
     public function setWalletUser($wallet, $clientMail, $clientFirstName, $clientLastName, $clientTitle, $street = null, $postCode = null, $city = null, $cityIso3 = null, $phoneNumber = null, $mobileNumber = null, $birthdate = null, $isDebtor = null, $nationalityIso3 = null, $birthCity = null, $birthCountryIso3 = null, $payerOrBeneficiary = null, $isOneTimeCustomer = null, $isTechWallet = null)
@@ -161,8 +162,9 @@ class LemonWay
     /**
      * Call a service.
      *
-     * @param  string   $serviceName
-     * @param  array    $parameters
+     * @param string $serviceName
+     * @param array  $parameters
+     *
      * @return string
      */
     public function callService($serviceName, array $parameters)
@@ -175,7 +177,7 @@ class LemonWay
 
         // wrap to 'p'
         $request = json_encode(['p' => $parameters]);
-        $serviceUrl = $this->apiKey . '/' . $serviceName;
+        $serviceUrl = $this->apiKey.'/'.$serviceName;
 
         $headers = ['Content-type: application/json;charset=utf-8',
             'Accept: application/json',
@@ -199,7 +201,7 @@ class LemonWay
         $network_err = curl_errno($ch);
 
         if ($network_err) {
-            error_log('curl_err: ' . $network_err);
+            error_log('curl_err: '.$network_err);
             throw new Exception($network_err);
         } else {
             $httpStatus = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -210,17 +212,14 @@ class LemonWay
                 $businessErr = $unwrapResponse->E;
 
                 if ($businessErr) {
-                    error_log($businessErr->Code . ' - ' . $businessErr->Msg . ' - Technical info: ' . $businessErr->Error);
-                    throw new \Exception($businessErr->Code . ' - ' . $businessErr->Msg);
+                    error_log($businessErr->Code.' - '.$businessErr->Msg.' - Technical info: '.$businessErr->Error);
+                    throw new \Exception($businessErr->Code.' - '.$businessErr->Msg);
                 }
 
                 return $unwrapResponse;
             } else {
                 throw new \Exception("Service return HttpStatus $httpStatus");
             }
-
         }
-
     }
-
 }
