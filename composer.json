@@ -1,0 +1,27 @@
+{
+    "name": "infinety/lemonway",
+    "description": "Laravel wrapper to use LemonWay",
+    "keywords": ["lemonway", "laravel", "laravel5"],
+    "homepage": "https://github.com/krato/lemonway",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Eric Lagarda",
+            "email": "eric@infinety.es"
+        }
+    ],
+    "require": {
+        "php": ">=5.5.9",
+        "illuminate/support": "5.*"
+    },
+    "require-dev": {
+        "mockery/mockery": "0.9.*",
+        "phpunit/phpunit": "~5.7"
+    },
+    "autoload": {
+        "psr-4": {
+            "Infinety\\LemonWay\\": "src/"
+        }
+    },
+    "minimum-stability": "stable"
+}
