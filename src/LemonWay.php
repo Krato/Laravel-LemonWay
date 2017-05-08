@@ -2,7 +2,12 @@
 
 namespace Infinety\LemonWay;
 
-use App\LemonWayUser;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Psr7;
+use Infinety\LemonWay\Exceptions\LemonWayExceptions;
+use Infinety\LemonWay\Models\LemonWayUser;
+use Infinety\LemonWay\Models\LemonWayWallet;
 
 class LemonWay
 {
@@ -110,15 +115,15 @@ class LemonWay
      * @param  $clientMail
      * @param  $clientFirstName
      * @param  $clientLastName
-     * @param  $clientTitle
-     * @param  $street
-     * @param  $postCode
-     * @param  $city
-     * @param  $cityIso3
-     * @param  $phoneNumber
-     * @param  $mobileNumber
-     * @param  $birthdate
-     * @param  $isDebtor
+     * @param null $clientTitle
+     * @param null $street
+     * @param null $postCode
+     * @param null $city
+     * @param null $cityIso3
+     * @param null $phoneNumber
+     * @param null $mobileNumber
+     * @param null $birthdate
+     * @param null $isDebtor
      * @param null $nationalityIso3
      * @param null $birthCity
      * @param null $birthCountryIso3
@@ -128,7 +133,7 @@ class LemonWay
      *
      * @return mixed
      */
-    public function setWalletUser($wallet, $clientMail, $clientFirstName, $clientLastName, $clientTitle, $street = null, $postCode = null, $city = null, $cityIso3 = null, $phoneNumber = null, $mobileNumber = null, $birthdate = null, $isDebtor = null, $nationalityIso3 = null, $birthCity = null, $birthCountryIso3 = null, $payerOrBeneficiary = null, $isOneTimeCustomer = null, $isTechWallet = null)
+    public function setWalletUser($wallet, $clientMail, $clientFirstName, $clientLastName, $clientTitle = null, $street = null, $postCode = null, $city = null, $cityIso3 = null, $phoneNumber = null, $mobileNumber = null, $birthdate = null, $isDebtor = null, $nationalityIso3 = null, $birthCity = null, $birthCountryIso3 = null, $payerOrBeneficiary = null, $isOneTimeCustomer = null, $isTechWallet = null)
     {
         $user = new LemonWayUser();
         $user->wallet = $wallet;
@@ -154,9 +159,42 @@ class LemonWay
         return $user;
     }
 
-    public function createWallet()
+    /**
+     * Create a wallet for a user
+     *
+     * @param LemonWayUser $user
+     *
+     * @return wallet
+     */
+    public function createWallet(LemonWayUser $user)
     {
-        //
+        $result = $this->callService('RegisterWallet', $user->toArray());
+
+        $wallet = new LemonWayWallet();
+        $wallet->fill((array) $result->WALLET);
+
+        return ['result' => $result, 'wallet' => $wallet];
+    }
+
+    /**
+     * Create a wallet for a user
+     *
+     * @param LemonWayUser $user
+     *
+     * @return wallet
+     */
+    public function getWalletDetails(LemonWayUser $user, $walletId)
+    {
+        $result = $this->callService('GetWalletDetails', ['wallet' => $walletId, 'email' => $user->clientMail]);
+
+        if ($result->E !== null) {
+
+            throw LemonWayExceptions::apiError($result->E->Msg, $result->E->Code);
+        }
+        $wallet = new LemonWayWallet();
+        $wallet->fill((array) $result->WALLET);
+
+        return $wallet;
     }
 
     /**
@@ -171,55 +209,51 @@ class LemonWay
     {
         $parameters = array_merge($this->callParameters, $parameters);
 
-// dump($parameters);
-
-// return false;
-
         // wrap to 'p'
-        $request = json_encode(['p' => $parameters]);
+        $request = ['p' => $parameters];
+
         $serviceUrl = $this->apiKey.'/'.$serviceName;
 
-        $headers = ['Content-type: application/json;charset=utf-8',
-            'Accept: application/json',
-            'Cache-Control: no-cache',
-            'Pragma: no-cache',
-            //"Content-Length:".strlen($request)
-        ];
+        $client = new Client([
+            'base_uri'        => $this->apiKey.'/',
+            'headers'         => [
+                'Content-type: application/json;charset=utf-8',
+                'Accept: application/json',
+                'Cache-Control: no-cache',
+                'Pragma: no-cache',
+            ],
+            'connect_timeout' => 60,
+            'verify'          => $this->sslActive,
+            'json'            => $request,
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $serviceUrl);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $request);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $this->sslActive);
+        ]);
 
-        $response = curl_exec($ch);
+        $response = null;
 
-        $network_err = curl_errno($ch);
-
-        if ($network_err) {
-            error_log('curl_err: '.$network_err);
-            throw new Exception($network_err);
-        } else {
-            $httpStatus = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            if ($httpStatus == 200) {
-                $unwrapResponse = json_decode($response)->d;
-                $businessErr = $unwrapResponse->E;
-
-                if ($businessErr) {
-                    error_log($businessErr->Code.' - '.$businessErr->Msg.' - Technical info: '.$businessErr->Error);
-                    throw new \Exception($businessErr->Code.' - '.$businessErr->Msg);
-                }
-
-                return $unwrapResponse;
+        try {
+            $response = $client->post($serviceName);
+        } catch (RequestException $e) {
+            $context = $e->getHandlerContext();
+            if (isset($context['error'])) {
+                $error = $context['error'];
+                dump($error);
             } else {
-                throw new \Exception("Service return HttpStatus $httpStatus");
+                echo Psr7\str($e->getRequest());
+                if ($e->hasResponse()) {
+                    echo Psr7\str($e->getResponse());
+                }
             }
+
         }
+
+        if ($response) {
+            $body = $response->getBody();
+
+            $obj = json_decode($body)->d;
+
+            return (object) $obj;
+        }
+
+        return [];
     }
 }
