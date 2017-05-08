@@ -160,7 +160,7 @@ class LemonWay
     }
 
     /**
-     * Create a wallet for a user
+     * Create a wallet for a user.
      *
      * @param LemonWayUser $user
      *
@@ -177,7 +177,7 @@ class LemonWay
     }
 
     /**
-     * Create a wallet for a user
+     * Create a wallet for a user.
      *
      * @param LemonWayUser $user
      *
@@ -188,7 +188,6 @@ class LemonWay
         $result = $this->callService('GetWalletDetails', ['wallet' => $walletId, 'email' => $user->clientMail]);
 
         if ($result->E !== null) {
-
             throw LemonWayExceptions::apiError($result->E->Msg, $result->E->Code);
         }
         $wallet = new LemonWayWallet();
@@ -243,7 +242,6 @@ class LemonWay
                     echo Psr7\str($e->getResponse());
                 }
             }
-
         }
 
         if ($response) {
