@@ -7,8 +7,9 @@ class IbanValidator
     /**
      * Validate whether the given value is a valid IBAN.
      *
-     * @param  string  $attribute
-     * @param  string  $value
+     * @param string $attribute
+     * @param string $value
+     *
      * @return bool
      */
     public function validate($attribute, $value)
@@ -19,8 +20,9 @@ class IbanValidator
     /**
      * Checks if given value is valid International Bank Account Number (IBAN).
      *
-     * @param  mixed  $value
-     * @return boolean
+     * @param mixed $value
+     *
+     * @return bool
      */
     private function isIban($value)
     {
@@ -51,15 +53,16 @@ class IbanValidator
     }
 
     /**
-     * Returns the designated length of IBAN for given IBAN
+     * Returns the designated length of IBAN for given IBAN.
      *
-     * @param  string $iban
-     * @return integer
+     * @param string $iban
+     *
+     * @return int
      */
     private function getIbanLength($iban)
     {
         $countrycode = substr($iban, 0, 2);
-        $lengths = array(
+        $lengths = [
             'AL' => 28,
             'AD' => 24,
             'AT' => 20,
@@ -142,7 +145,7 @@ class IbanValidator
             'MZ' => 25,
             'SN' => 28,
             'UA' => 29,
-        );
+        ];
 
         return isset($lengths[$countrycode]) ? $lengths[$countrycode] : false;
     }

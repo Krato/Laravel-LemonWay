@@ -18,7 +18,7 @@ class LemonWayWallet extends Model
     // protected $appends = ['balances'];
 
     /**
-     * Returns the balances of current wallet
+     * Returns the balances of current wallet.
      *
      * @return [type]
      */
@@ -29,8 +29,6 @@ class LemonWayWallet extends Model
         if ($balances->WALLET && $balances->WALLET[0]) {
             return $balances->WALLET[0];
         }
-
-        return;
     }
 
     /**
@@ -42,7 +40,7 @@ class LemonWayWallet extends Model
     }
 
     /**
-     * Uploads a file to current wallet
+     * Uploads a file to current wallet.
      *
      * @param $fileName
      * @param $type
@@ -55,7 +53,6 @@ class LemonWayWallet extends Model
      * 5: Residence permit
      * 7: Official company registration document
      * 11 to 20: other documents
-     *
      * @param $documentBuffer
      * @param $autoSigned
      */
