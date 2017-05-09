@@ -2,6 +2,7 @@
 
 namespace Infinety\LemonWay;
 
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -27,6 +28,8 @@ class LemonWayServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/config/lemonway.php' => config_path('lemonway.php'),
         ]);
+
+        $this->addValidations();
     }
 
     /**
@@ -43,8 +46,6 @@ class LemonWayServiceProvider extends ServiceProvider
             'lemonway'
         );
 
-        $this->app->bind('search', 'Acme\Search\Search');
-
         $this->app->bind('LemonWay', function ($app) {
             return new LemonWay();
         });
@@ -58,5 +59,11 @@ class LemonWayServiceProvider extends ServiceProvider
     public function provides()
     {
         return [LemonWay::class];
+    }
+
+    private function addValidations()
+    {
+        Validator::extend('iban', 'Infinety\LemonWay\Validations\IbanValidator@validate');
+        Validator::extend('bic_swift', 'Infinety\LemonWay\Validations\BicSwiftValidator@validate');
     }
 }

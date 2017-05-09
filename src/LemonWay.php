@@ -2,9 +2,11 @@
 
 namespace Infinety\LemonWay;
 
+use DateTime;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7;
+use Illuminate\Support\Facades\Validator;
 use Infinety\LemonWay\Exceptions\LemonWayExceptions;
 use Infinety\LemonWay\Models\LemonWayUser;
 use Infinety\LemonWay\Models\LemonWayWallet;
@@ -47,9 +49,48 @@ class LemonWay
     protected $sslActive;
 
     /**
-     * @var current user
+     * @var lemonway fee
      */
-    protected $currentUser;
+    protected $fee;
+
+    /**
+     * @var array
+     */
+    protected $walletExtras = [
+        'clientTitle',
+        'street',
+        'postCode',
+        'city',
+        'cityIso3',
+        'phoneNumber',
+        'mobileNumber',
+        'birthdate',
+        'isDebtor',
+        'nationalityIso3',
+        'birthCity',
+        'birthCountryIso3',
+        'payerOrBeneficiary',
+        'isOneTimeCustomer',
+        'isTechWallet',
+
+    ];
+
+    /**
+     * @var array
+     */
+    protected $walletPaymentFormExtras = [
+        'amountCom',
+        'comment',
+        'useRegisteredCard',
+        'wkToken',
+        'returnUrl',
+        'errorUrl',
+        'cancelUrl',
+        'autoCommission',
+        'registerCard',
+        'isPreAuth',
+        'email',
+    ];
 
     /**
      * @const SurveyMonkey Status code:  Success
@@ -68,6 +109,7 @@ class LemonWay
         $this->language = config('lemonway.language');
         $this->version = config('lemonway.version');
         $this->sslActive = config('lemonway.ssl');
+        $this->fee = config('lemonway.fee');
         $this->createCredentialsData();
     }
 
@@ -78,8 +120,6 @@ class LemonWay
      */
     protected function getUserIP()
     {
-        $ip = '';
-
         if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
             $ip = $_SERVER['HTTP_CLIENT_IP'];
         } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
@@ -115,46 +155,22 @@ class LemonWay
      * @param  $clientMail
      * @param  $clientFirstName
      * @param  $clientLastName
-     * @param null $clientTitle
-     * @param null $street
-     * @param null $postCode
-     * @param null $city
-     * @param null $cityIso3
-     * @param null $phoneNumber
-     * @param null $mobileNumber
-     * @param null $birthdate
-     * @param null $isDebtor
-     * @param null $nationalityIso3
-     * @param null $birthCity
-     * @param null $birthCountryIso3
-     * @param null $payerOrBeneficiary
-     * @param null $isOneTimeCustomer
-     * @param null $isTechWallet
      *
      * @return mixed
      */
-    public function setWalletUser($wallet, $clientMail, $clientFirstName, $clientLastName, $clientTitle = null, $street = null, $postCode = null, $city = null, $cityIso3 = null, $phoneNumber = null, $mobileNumber = null, $birthdate = null, $isDebtor = null, $nationalityIso3 = null, $birthCity = null, $birthCountryIso3 = null, $payerOrBeneficiary = null, $isOneTimeCustomer = null, $isTechWallet = null)
+    public function setWalletUser($wallet, $clientMail, $clientFirstName, $clientLastName, $extras = [])
     {
         $user = new LemonWayUser();
         $user->wallet = $wallet;
         $user->clientMail = $clientMail;
         $user->clientFirstName = $clientFirstName;
         $user->clientLastName = $clientLastName;
-        $user->clientTitle = $clientTitle;
-        $user->street = $street;
-        $user->postCode = $postCode;
-        $user->city = $city;
-        $user->cityIso3 = $cityIso3;
-        $user->phoneNumber = $phoneNumber;
-        $user->mobileNumber = $mobileNumber;
-        $user->birthdate = $birthdate;
-        $user->isDebtor = $isDebtor;
-        $user->nationalityIso3 = $nationalityIso3;
-        $user->birthCity = $birthCity;
-        $user->birthCountryIso3 = $birthCountryIso3;
-        $user->payerOrBeneficiary = $payerOrBeneficiary;
-        $user->isOneTimeCustomer = $isOneTimeCustomer;
-        $user->isTechWallet = $isTechWallet;
+
+        foreach ($extras as $extra => $value) {
+            if (in_array($extra, $this->walletExtras)) {
+                $user->{$extra} = $value;
+            }
+        }
 
         return $user;
     }
@@ -166,14 +182,17 @@ class LemonWay
      *
      * @return wallet
      */
-    public function createWallet(LemonWayUser $user)
+    public function createWallet(LemonWayUser $user, $returnAsWallet = true)
     {
         $result = $this->callService('RegisterWallet', $user->toArray());
 
-        $wallet = new LemonWayWallet();
-        $wallet->fill((array) $result->WALLET);
+        $this->checkError($result);
 
-        return ['result' => $result, 'wallet' => $wallet];
+        if (!$returnAsWallet) {
+            return $result;
+        }
+
+        return $this->getWalletDetails($user, $result->WALLET->LWID);
     }
 
     /**
@@ -183,17 +202,215 @@ class LemonWay
      *
      * @return wallet
      */
-    public function getWalletDetails(LemonWayUser $user, $walletId)
+    public function getWalletDetails(LemonWayUser $user, $walletId = null)
     {
         $result = $this->callService('GetWalletDetails', ['wallet' => $walletId, 'email' => $user->clientMail]);
 
-        if ($result->E !== null) {
-            throw LemonWayExceptions::apiError($result->E->Msg, $result->E->Code);
-        }
+        $this->checkError($result);
+
         $wallet = new LemonWayWallet();
         $wallet->fill((array) $result->WALLET);
 
         return $wallet;
+    }
+
+    /**
+     * Upload a file to a wallet
+     * http://documentation.lemonway.fr/api-en/directkit/manage-wallets/uploadfile-document-upload-for-kyc
+     *
+     * @param LemonWayWallet $wallet
+     * @param $fileName
+     * @param $type
+     *
+     * 0: ID card
+     * 1: Proof of address
+     * 2: Scan of a proof of IBAN
+     * 3: Passport (European Community)
+     * 4: Passport (outside the European Community)
+     * 5: Residence permit
+     * 7: Official company registration document
+     * 11 to 20: other documents
+     *
+     * @param $documentBuffer
+     * @param $autoSigned
+     *
+     * @return object
+     */
+    public function uploadFileToWallet(LemonWayWallet $wallet, $fileName, $type, $documentBuffer, $sddMandateId = false)
+    {
+        $request = ['wallet' => $wallet->ID, 'fileName' => $fileName, 'type' => $type, 'buffer' => $documentBuffer];
+
+        if ($sddMandateId != false) {
+            $request['sddMandateId'] = $sddMandateId;
+        }
+
+        $result = $this->callService('UploadFile', $request);
+
+        $this->checkError($result);
+
+        return $result->UPLOAD;
+    }
+
+    /**
+     * Gets modified wallets from a given timestamp date
+     *
+     * @param $timeStamp
+     *
+     * @return object
+     */
+    public function getWalletsModified($timestamp)
+    {
+        if (!$this->isTimestamp($timestamp)) {
+            throw LemonWayExceptions::isNotATimeStamp();
+        }
+
+        $result = $this->callService('GetKycStatus', ['updateDate' => $timestamp]);
+
+        $this->checkError($result);
+
+        return $result->WALLETS;
+    }
+
+    /**
+     * Get Balances for given update date or for wallet between walletIdStart and walletIdEned
+     *
+     * @param $updateDate
+     * @param false|string $walletIdStart
+     * @param false|string $walletIdEnd
+     */
+    public function getBalances($updateDate = false, $walletIdStart = false, $walletIdEnd = false)
+    {
+        if ($updateDate) {
+            if (!$this->isTimestamp($updateDate)) {
+                throw LemonWayExceptions::isNotATimeStamp();
+            }
+            $request = ['updateDate' => $updateDate];
+        } else {
+            if (!$walletIdStart) {
+                return 'Wallet ID Start is mandatory if updateDate is false';
+            }
+            if (!$walletIdEnd) {
+                return 'Wallet ID End is mandatory if updateDate is false';
+            }
+
+            $request = ['walletIdStart' => $walletIdStart, 'walletIdEnd' => $walletIdEnd];
+        }
+
+        $result = $this->callService('GetBalances', $request);
+
+        $this->checkError($result);
+
+        return $result->WALLETS;
+    }
+
+    /**
+     * Get list of all transactions of a wallet
+     *
+     * @param LemonWayWallet $wallet
+     * @param null $startDate
+     * @param null $endDate
+     *
+     * @return object
+     */
+    public function getTransactionsHistory(LemonWayWallet $wallet, $startDate = null, $endDate = null)
+    {
+
+        if ($startDate != null && !$this->isTimestamp($startDate)) {
+            throw LemonWayExceptions::isNotATimeStamp('StartDate');
+        }
+
+        if ($endDate != null && !$this->isTimestamp($endDate)) {
+            throw LemonWayExceptions::isNotATimeStamp('EndDate');
+        }
+
+        $result = $this->callService('GetWalletTransHistory', ['wallet' => $wallet->ID, 'startDate' => $startDate, 'endDate' => $endDate]);
+
+        $this->checkError($result);
+
+        return $result->TRANS;
+    }
+
+    /**
+     * Creates a oayment form and returns the ID
+     *
+     * @param  LemonWayWallet $wallet
+     * @param  double         $amount - two decimals
+     * @param  array          $extras
+     *
+     * @return object
+     */
+    public function createPaymentForm(LemonWayWallet $wallet, $amount, $extras = [])
+    {
+        $request = ['wallet' => $wallet->ID, 'amountTot' => $amount];
+
+        foreach ($extras as $extra => $value) {
+            if (in_array($extra, $this->walletPaymentFormExtras)) {
+                $request[$extra] = $value;
+            }
+        }
+
+        $result = $this->callService('MoneyInWebInit', $request);
+
+        $this->checkError($result);
+
+        return $result->MONEYINWEB;
+    }
+
+    /**
+     * @param LemonWayWallet $wallet
+     * @param $holder
+     * @param $iban
+     * @param $address1
+     * @param $address2
+     * @param $bic
+     * @param null $comment
+     */
+    public function registerIban(LemonWayWallet $wallet, $holder, $iban, $address1, $address2, $bic = null, $comment = null)
+    {
+
+        //Test IBAN
+        $validateIban = Validator::make(['iban' => $iban], ['iban' => 'iban'])->passes();
+        if (!$validateIban) {
+            throw LemonWayExceptions::ibanIsNotValid();
+        }
+
+        if ($bic != null) {
+            $validateBic = Validator::make(['bic' => $bic], ['bic' => 'bic_swift'])->passes();
+
+            if (!$validateBic) {
+                throw LemonWayExceptions::bicSwiftIsNotValid();
+            }
+        }
+
+        $result = $this->callService('RegisterIBAN', ['wallet' => $wallet->ID, 'holder' => $holder, 'iban' => $iban, 'dom1' => $address1, 'dom2' => $address2, 'comment' => $comment]);
+
+        $this->checkError($result);
+
+        return $result->IBAN_REGISTER;
+    }
+
+    /**
+     * Check if the given result has an error
+     *
+     * @param $result
+     */
+    private function checkError($result)
+    {
+        if ($result->E !== null) {
+            throw LemonWayExceptions::apiError($result->E->Msg, $result->E->Code);
+        }
+    }
+
+    /**
+     * Check if given timestamp is valid
+     *
+     * @param $timestamp
+     */
+    private function isTimestamp($timestamp)
+    {
+        $date = DateTime::createFromFormat('U', $timestamp);
+
+        return $date && DateTime::getLastErrors()['warning_count'] == 0 && DateTime::getLastErrors()['error_count'] == 0;
     }
 
     /**
@@ -224,7 +441,6 @@ class LemonWay
             'connect_timeout' => 60,
             'verify'          => $this->sslActive,
             'json'            => $request,
-
         ]);
 
         $response = null;
