@@ -219,7 +219,7 @@ class LemonWay
      * Create a wallet for a user.
      *
      * @param $email
-     * @param  null $walletId
+     * @param null $walletId
      *
      * @return wallet
      */
@@ -237,7 +237,7 @@ class LemonWay
 
     /**
      * Upload a file to a wallet
-     * http://documentation.lemonway.fr/api-en/directkit/manage-wallets/uploadfile-document-upload-for-kyc
+     * http://documentation.lemonway.fr/api-en/directkit/manage-wallets/uploadfile-document-upload-for-kyc.
      *
      * @param LemonWayWallet $wallet
      * @param $fileName
@@ -251,7 +251,6 @@ class LemonWay
      * 5: Residence permit
      * 7: Official company registration document
      * 11 to 20: other documents
-     *
      * @param $documentBuffer
      * @param $autoSigned
      *
@@ -273,7 +272,7 @@ class LemonWay
     }
 
     /**
-     * Gets modified wallets from a given timestamp date
+     * Gets modified wallets from a given timestamp date.
      *
      * @param $timeStamp
      *
@@ -293,7 +292,7 @@ class LemonWay
     }
 
     /**
-     * Get Balances for given update date or for wallet between walletIdStart and walletIdEned
+     * Get Balances for given update date or for wallet between walletIdStart and walletIdEned.
      *
      * @param $updateDate
      * @param false|string $walletIdStart
@@ -325,11 +324,11 @@ class LemonWay
     }
 
     /**
-     * Get list of all transactions of a wallet
+     * Get list of all transactions of a wallet.
      *
      * @param LemonWayWallet $wallet
-     * @param null $startDate
-     * @param null $endDate
+     * @param null           $startDate
+     * @param null           $endDate
      *
      * @return object
      */
@@ -351,11 +350,11 @@ class LemonWay
     }
 
     /**
-     * Creates a oayment form and returns the ID
+     * Creates a oayment form and returns the ID.
      *
-     * @param  LemonWayWallet $wallet
-     * @param  double         $amount - two decimals
-     * @param  array          $extras
+     * @param LemonWayWallet $wallet
+     * @param float          $amount - two decimals
+     * @param array          $extras
      *
      * @return object
      */
@@ -383,11 +382,11 @@ class LemonWay
     }
 
     /**
-     * Creates a oayment form and returns the ID
+     * Creates a oayment form and returns the ID.
      *
-     * @param  LemonWayWallet $wallet
-     * @param  double         $amount - two decimals
-     * @param  array          $extras
+     * @param LemonWayWallet $wallet
+     * @param float          $amount - two decimals
+     * @param array          $extras
      *
      * @return object
      */
@@ -442,7 +441,7 @@ class LemonWay
     }
 
     /**
-     * Check if the given result has an error
+     * Check if the given result has an error.
      *
      * @param $result
      */
@@ -454,7 +453,7 @@ class LemonWay
     }
 
     /**
-     * Check if given timestamp is valid
+     * Check if given timestamp is valid.
      *
      * @param $timestamp
      */
