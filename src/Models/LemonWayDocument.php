@@ -4,7 +4,6 @@ namespace Infinety\LemonWay\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
-use Infinety\LemonWay\LemonWay;
 
 class LemonWayDocument extends Model
 {
@@ -14,9 +13,9 @@ class LemonWayDocument extends Model
     protected $fillable = ['ID', 'S', 'TYPE', 'VD', 'C'];
 
     /**
-     * Return the Id
+     * Return the Id.
      *
-     * @return  int
+     * @return int
      */
     public function getIdAttribute()
     {
@@ -24,22 +23,23 @@ class LemonWayDocument extends Model
     }
 
     /**
-     * Return the Id
+     * Return the Id.
      *
-     * @return  int
+     * @return int
      */
     public function getValidDateAttribute()
     {
-        if ($this->attributes['VD'] == "") {
-            return null;
+        if ($this->attributes['VD'] == '') {
+            return;
         }
+
         return Carbon::createFromFormat('d/m/Y', $this->attributes['VD']);
     }
 
     /**
-     * Return the status string
+     * Return the status string.
      *
-     * @return  string
+     * @return string
      */
     public function getStatusAttribute()
     {
@@ -75,9 +75,9 @@ class LemonWayDocument extends Model
     }
 
     /**
-     * Return the type string
+     * Return the type string.
      *
-     * @return  string
+     * @return string
      */
     public function getTypeAttribute()
     {
