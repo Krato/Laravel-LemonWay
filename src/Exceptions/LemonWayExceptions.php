@@ -13,14 +13,14 @@ class LemonWayExceptions extends Exception
     public static function apiError(string $msg, string $errorCode)
     {
         if ($errorCode == 147) {
-            return new static('This wallet ID and user email are not existent');
+            return new static('This wallet ID and user email are not existent', 147);
         }
 
         if ($errorCode == 152) {
-            return new static('This client already exists');
+            return new static('This client already exists', 152);
         }
 
-        return new static("{$msg} - Code {$errorCode}");
+        return new static("{$msg} - Code {$errorCode}", $errorCode);
     }
 
     /**
@@ -28,7 +28,7 @@ class LemonWayExceptions extends Exception
      */
     public static function isNotATimeStamp($msg)
     {
-        return new static("{$msg} is not valid timestamp");
+        return new static("{$msg} is not valid timestamp", 22);
     }
 
     /**
@@ -36,7 +36,7 @@ class LemonWayExceptions extends Exception
      */
     public static function ibanIsNotValid()
     {
-        return new static('The given iban is not valid');
+        return new static('The given iban is not valid', 10);
     }
 
     /**
@@ -44,6 +44,6 @@ class LemonWayExceptions extends Exception
      */
     public static function bicSwiftIsNotValid()
     {
-        return new static('The given BIC/SWIFT is not valid');
+        return new static('The given BIC/SWIFT is not valid', 11);
     }
 }

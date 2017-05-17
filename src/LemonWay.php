@@ -2,11 +2,7 @@
 
 namespace Infinety\LemonWay;
 
-use DateTime;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\Psr7;
-use Illuminate\Support\Facades\Validator;
 use Infinety\LemonWay\Exceptions\LemonWayExceptions;
 use Infinety\LemonWay\Models\LemonWayUser;
 use Infinety\LemonWay\Models\LemonWayWallet;
@@ -17,6 +13,11 @@ class LemonWay
      * @var string API key
      */
     protected $apiKey;
+
+    /**
+     * @var string API key
+     */
+    protected $webkitUrl;
 
     /**
      * @var string API login
@@ -90,6 +91,24 @@ class LemonWay
         'registerCard',
         'isPreAuth',
         'email',
+        'firstNamePayer',
+        'lastNamePayer',
+        'emailPayer',
+        'style',
+        'atosStyle',
+        'notifUrl',
+        'options',
+    ];
+
+    /**
+     * @var array
+     */
+    protected $walletPaymentFormWithCardExtras = [
+        'amountCom',
+        'comment',
+        'autoCommission',
+        'isPreAuth',
+        'delayedDays',
     ];
 
     /**
@@ -104,6 +123,7 @@ class LemonWay
     public function __construct()
     {
         $this->apiKey = config('lemonway.api_url');
+        $this->webkitUrl = config('lemonway.webkit_url');
         $this->login = config('lemonway.login');
         $this->password = config('lemonway.password');
         $this->language = config('lemonway.language');
@@ -198,13 +218,14 @@ class LemonWay
     /**
      * Create a wallet for a user.
      *
-     * @param LemonWayUser $user
+     * @param $email
+     * @param  null $walletId
      *
      * @return wallet
      */
-    public function getWalletDetails(LemonWayUser $user, $walletId = null)
+    public function getWalletDetails($email, $walletId = null)
     {
-        $result = $this->callService('GetWalletDetails', ['wallet' => $walletId, 'email' => $user->clientMail]);
+        $result = $this->callService('GetWalletDetails', ['wallet' => $walletId, 'email' => $email]);
 
         $this->checkError($result);
 
@@ -314,7 +335,6 @@ class LemonWay
      */
     public function getTransactionsHistory(LemonWayWallet $wallet, $startDate = null, $endDate = null)
     {
-
         if ($startDate != null && !$this->isTimestamp($startDate)) {
             throw LemonWayExceptions::isNotATimeStamp('StartDate');
         }
@@ -339,7 +359,7 @@ class LemonWay
      *
      * @return object
      */
-    public function createPaymentForm(LemonWayWallet $wallet, $amount, $extras = [])
+    public function createPaymentForm(LemonWayWallet $wallet, $amount, $extras = [], $asLink = true, $lang = 'en', $style = '')
     {
         $request = ['wallet' => $wallet->ID, 'amountTot' => $amount];
 
@@ -353,7 +373,39 @@ class LemonWay
 
         $this->checkError($result);
 
+        if ($asLink == true) {
+            $data = $result->MONEYINWEB;
+
+            return $this->webkitUrl.'?moneyInToken='.$data->TOKEN.'&p='.$style.'&lang='.$lang;
+        }
+
         return $result->MONEYINWEB;
+    }
+
+    /**
+     * Creates a oayment form and returns the ID
+     *
+     * @param  LemonWayWallet $wallet
+     * @param  double         $amount - two decimals
+     * @param  array          $extras
+     *
+     * @return object
+     */
+    public function createPaymentFormWithCardId(LemonWayWallet $wallet, $amount, $cardId)
+    {
+        $request = ['wallet' => $wallet->ID, 'cardId' => $cardId, 'amountTot' => $amount];
+
+        foreach ($extras as $extra => $value) {
+            if (in_array($extra, $this->walletPaymentFormWithCardExtras)) {
+                $request[$extra] = $value;
+            }
+        }
+
+        $result = $this->callService('MoneyInWithCardId', $request);
+
+        $this->checkError($result);
+
+        return $result;
     }
 
     /**
@@ -431,12 +483,12 @@ class LemonWay
         $serviceUrl = $this->apiKey.'/'.$serviceName;
 
         $client = new Client([
-            'base_uri'        => $this->apiKey.'/',
+            'base_uri'        => $this->apiKey.' / ',
             'headers'         => [
-                'Content-type: application/json;charset=utf-8',
-                'Accept: application/json',
-                'Cache-Control: no-cache',
-                'Pragma: no-cache',
+                'Content - type:application / json; charset = utf - 8',
+                'Accept:application / json',
+                'Cache - Control:no - cache',
+                'Pragma:no - cache',
             ],
             'connect_timeout' => 60,
             'verify'          => $this->sslActive,

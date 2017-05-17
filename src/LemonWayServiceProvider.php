@@ -6,14 +6,13 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 
 /**
- * Laravel wrapper for Directus API.
+ * Laravel wrapper for Lemonaway
  *
  * @category   Laravel Directus
  *
  * @version    1.0.0
  *
- * @copyright  Copyright (c) 2017 thePLAN (http://www.theplanworks.com)
- * @author     Matt Fox <matt.fox@theplanworks.com>
+ * @author     Eric Lagarda <eric@infinety.com>
  * @license    https://opensource.org/licenses/MIT    MIT
  */
 class LemonWayServiceProvider extends ServiceProvider

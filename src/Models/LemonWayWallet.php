@@ -4,6 +4,7 @@ namespace Infinety\LemonWay\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Infinety\LemonWay\LemonWayFacade as LemonWay;
+use Infinety\LemonWay\Models\LemonWayDocument;
 
 class LemonWayWallet extends Model
 {
@@ -34,11 +35,19 @@ class LemonWayWallet extends Model
     }
 
     /**
-     * @return null
+     *  Returns the transactions made by this wallet
+     *
+     * @return object
      */
     public function getTransactionsAttribute()
     {
         return LemonWay::getTransactionsHistory($this);
+    }
+
+
+    public function getDocumentsAttribute()
+    {
+        return $this->documents();
     }
 
     /**
@@ -62,5 +71,28 @@ class LemonWayWallet extends Model
     public function uploadFile($name, $type, $documentBuffer, $sddMandateId = false)
     {
         return LemonWay::uploadFileToWallet($this, $name, $type, $documentBuffer.$sddMandateId);
+    }
+
+    /**
+     * Returns documents model for current wallet
+     *
+     * @return  [type]  [description]
+     */
+    public function documents()
+    {
+        if (count($this->DOCS) > 0) {
+            $documents = collect([]);
+
+            foreach ($this->DOCS as $docData) {
+                $document = new LemonWayDocument();
+                $document->fill((array) $docData);
+
+                $documents->push($document);
+            }
+
+            return $documents;
+        }
+
+        return null;
     }
 }
